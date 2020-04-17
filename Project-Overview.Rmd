@@ -1,0 +1,140 @@
+---
+title: "Santa Cruz Needle Waste Database"
+author: "aaron mamula"
+date: "4/15/2020"
+output: html_document
+---
+
+# {.tabset .tabset-fade .tabset-pills}
+
+## Project Narrative
+
+### Narrative
+
+Santa Cruz, like a number of other rapidly growing West Coast cities, has a problem with needle waste. Used hypodermic needles have been found in public parks, open spaces, and a number of popular outdoor recreation destinations throughout the city. 
+
+While it is broadly accepted that needle waste in public spaces poses a legitimate public health concern, there are many unanswered questions regarding the scale of the problem and the efficacy of existing strategies for reducing needle waste. These lingering questions are empirical in nature and must be informed by reliable data and analysis. 
+
+Presently, there are data on needle waste encounteres but they are prohibitively difficult to use. Existing data come from many disparite sources (logs maintained by city workers, reported made by private citizens) and are not well curated. 
+
+The primary purpose of this project is to organize these needle encouter data in a user-friendly format. A secondary purpose of this project is to build applications that allow the public to easily download and analyze these important data.
+
+### Executive Summary
+
+The key elements of this project are as follows:
+
+1. First, I gathered needle encounter logs from the Santa Cruz Department of Public Works and the Santa Cruz Parks and Recreation Department. These logs generally contain a date, a number of needles that were picked up, and a description of where these needles were picked up.
+
+2. Since the locations reported in these logs are descriptive rather than geospatial, I geo-coded each observation by hand. For example, a Public Works employee may record several needles pick-up at "San Lorenzo Park Women's Restroom". I used google maps to assign latitude and longitude coordinates to these locations.
+
+3. I used an R Script to clean these data and output them to a series of .csv files
+
+4. I created a MySQL relational database inside Amazon's cloud hosted AWS-RDS service. 
+
+5. I uploaded the needle encounters and the geo-referenced locations to database tables inside the AWS-RDS database. Here it is worth noting that I created this database as a public database. So anyone with the proper endpoint can access it.
+
+6. Finally, I have developed several R Scripts to analyze these data and make them available for public consumption through an R-Shiny web-app.
+
+## Data 
+
+The raw data powering this project come from monthly needle encounter logs kept by the Santa Cruz Public Works Department and the Santa Cruz Department of Parks and Recreation. I collected these monthly logs from two sources:
+
+1. [City Needle Logs](https://sckeepinitreal.wixsite.com/sc--keepin-it-real/needle-reports)
+2. [Citizen Needle Reports provided by Take Back Santa Cruz](http://takebacksantacruz.org/category/needles-in-public-places/)
+
+The data contained in these logs are relatively spartan. Each encounter is generally defined by the following characteristics:
+
+1. a date
+2. a location description
+3. a number of used needles recovered
+
+Two additional points are worth noting here:
+
+1. A 4th field can generally be added to each encounter: an identifier for the person/agency reporting. In the current data this can take one of three values
+    * Park and Recreation
+    * Public Works
+    * Private Citizen
+
+2. The number of needles is not always reported. That is, these data are a mix of counts and presence/absence data. I have chosen to retain the counts for observation that have a needle count and to infer a value of 1 for observations not explicitly reporting a number of needles.
+
+## Methods
+
+In this section I will provide the details of this data pipeline. My focus here is on explaining the process of how the database was constructed and how it is maintained. This focus on process is meant to invite discussion on how the data pipeline could potentially be improved.
+
+### Database Construction
+
+I started by launching a MySQL database instance in Amazon's AWS-RDS service. This database instance is positioned in a virtual private cloud inside a public security group. The security group is set to accept inbound traffic from any IP address. This makes the database very insecure. 
+
+Since these are public data and not of a sensitive nature, I have chosen to endow the database with almost no security features.
+
+#### Data Cleansing
+
+The original data have been minimally processed. In many cases, the same location was recorded several different ways. For example, the location, "Neary Lagoon Restroom" has been recorded on different dates (probably by different individuals) in at least 4 different ways:
+
+* Neary Lagoon RR
+* Neary RR
+* Neary RRoom
+* Nearys RR
+
+These raw data have the following format:
+
+```{r echo=F}
+data.frame(date="04-02-2019",location="Main Beach wrack line",needles=3)
+
+```
+
+As discussed in the "Data" section, I augment these raw data with an identifier for the reporting agency. Additionally, I construct the derived field of "location_assigned" in order to aid in the process of matching to a supporting table I created with geo-referenced coordinates for each location.
+
+The "cleaned" needle encounter data have the following form:
+
+```{r echo=F}
+data.frame(date=c("04-01-2019","04-13-2019"),location=c("Cowell Beach Steps","113 Walnut Street"),city=c("Santa Cruz","Santa Cruz"),zip=c(NA,95060),agency=c("Public Works","Parks and Rec."),needles=c(1,5),location_assigned=c("COWELL BEACH STEPS","113 WALNUT STREET_95060"))
+```
+
+A final note on the "location_assigned" field: if a zip code was reported in the raw data, I append this to the location description in order to help with the geo-referencing. In most cases, this additional information isn't all that helpful. However, there are a small handful of cases where the location reported was a just a street name (such as "Water Street"). In these cases, I had to make a judgement call about what singular lat/long point I would assign to the location "Water Street". Since Water Street in Santa Cruz runs through the zip codes 95060, 95062, and 95065, if a zip code was reported in the raw data it was somewhat helpful in assigning a point-in-space to a location description.
+
+The final "clean" needle encounter data were uploaded to the MySQL DB in a table named: NEEDLE_EVENTS.
+
+#### Value Added
+
+The primary value added information for this project is the geo-referenced coordinates assigned to each location description. I store these coordinates in a separate database table called: LOCATIONS_GEO. The table LOCATIONS_GEO looks like this:
+
+```{r echo=F}
+data.frame(location_assigned=c("COWELL BEACH STEPS","POGONIP AT GOLF CLUB GATE"),lat=c(36.990276,36.962289),lon=c(-122.036664,-122.024009),location_accuracy=c("High","High"),validated=c(NA,NA))
+```
+
+The coordinates are stored in a separate table (rather than being added to the needle encounters data) for efficiency. Because the data have a temporal component, the same location may appear over and over again in the NEEDLE_EVENTS table. Rather than store the same lat/long for each incidence of the same location, I store these coordinates in a separate table that can be joined to the NEEDLE_EVENTS table.
+
+I have two additional fields appended to the LOCATIONS_GEO table:
+
+1. location_accuracy: this is a subjective indicator of how likely I think it is that the assigned lat/long coordinates represent where the needle encounter actually took place. In some cases (like "Cowell Beach Steps") the location descriptions are pretty precise and there a high probability that the lat/long for "Cowell Beach Steps" accurately reflects where the needle was picked-up. There are other location descriptions like "N. Branciforte" where the subjective location accuracy is "low". N. Branciforte Ave is a pretty long street. I have arbitrarily chosen a set of lat/long coordinates along N. Branciforte Ave to assign to this location. However, I have also augmented this location with a location_accuracy of "low" to reflect that there are a lot of other possible lat/long coordinates for this location description. 
+
+2. validated: I constructed this field with the intention of having someone else eventually look over my assignment of coordinates to location descriptions. 
+
+### Database Access
+
+Because I've set public permissions on the database, it's accessible in a variety of formats. 
+
+For pushing data up to the database I have been using a MySQL Workbench Client.
+
+For pulling data down from the database I have been using R. Since I do most of my analysis in R, it makes sense to try and pull the data directly into an R Workspace. I do this using the DBI, dplyr, and RODBC libraries:
+
+```{r warning=F}
+library(DBI)
+library(dplyr)
+library(RODBC)
+
+cn <- dbConnect(drv      = RMySQL::MySQL(), 
+                username = "admin", 
+                password = "nmfssocialscience", 
+                host     = "mams-teaching-public.c65i4tmttvql.us-west-1.rds.amazonaws.com", 
+                port     = 3306, 
+                dbname   = "needle_waste")
+
+
+needles <- tbl(cn, "needle_events")
+needles <- tbl_df(needles)
+print.data.frame(needles[1:3,])
+```
+
+## Outputs
