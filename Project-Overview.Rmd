@@ -125,6 +125,8 @@ For pulling data down from the database I have been using R. Since I do most of 
 library(DBI)
 library(dplyr)
 library(RODBC)
+library(ggplot2)
+library(lubridate)
 ```
 ```{r eval=F}
 library(DBI)
@@ -148,3 +150,27 @@ print.data.frame(needles[1:3,])
 
 ## Outputs
 
+```{r}
+#
+cn <- dbConnect(drv      = RMySQL::MySQL(), 
+                username = "admin", 
+                password = "nmfssocialscience", 
+                host     = "mams-teaching-public.c65i4tmttvql.us-west-1.rds.amazonaws.com", 
+                port     = 3306, 
+                dbname   = "needle_waste")
+
+
+needles <- tbl(cn, "needle_events")
+needles <- tbl_df(needles)
+locs <- tbl(cn,"locations_geo")
+locs <- tbl_df(locs)
+
+#join the coordinates and observations
+needles <- needles %>% left_join(locs,by=c('LOCATION_ASSIGNED'))
+```
+
+```{r}
+# first, a really clean plot of aggregate monthly needle encounters
+needles <- needles %>% mutate(date=as.Date(DATE,format="%m/%d/%y"), month=month(date),year=year(date)) %>% 
+            group_by(year,month) %>% summarise(needles=sum(NEEDLE_QUANTITY,na.rm=T))
+```
