@@ -150,6 +150,8 @@ print.data.frame(needles[1:3,])
 
 ## Outputs
 
+I begin by pulling all of the data down from the cloud-hosted database:
+
 ```{r}
 #
 cn <- dbConnect(drv      = RMySQL::MySQL(), 
@@ -169,8 +171,51 @@ locs <- tbl_df(locs)
 needles <- needles %>% left_join(locs,by=c('LOCATION_ASSIGNED'))
 ```
 
-```{r}
+
+### Basic Time-Series of Counts
+
+To begin to understand these data a little, we aggregate the total needles logged by month over the span of our data and plot the monthly counts below.
+
+```{r warning=F}
 # first, a really clean plot of aggregate monthly needle encounters
-needles <- needles %>% mutate(date=as.Date(DATE,format="%m/%d/%y"), month=month(date),year=year(date)) %>% 
-            group_by(year,month) %>% summarise(needles=sum(NEEDLE_QUANTITY,na.rm=T))
+needles.monthly <- needles %>% mutate(date=as.Date(DATE,format="%m/%d/%y"), month=month(date),year=year(date)) %>% 
+            group_by(year,month) %>% summarise(needles=sum(NEEDLE_QUANTITY,na.rm=T)) %>% 
+            mutate(date=as.Date(paste(year,"-",month,"-",1,sep=""),format="%Y-%m-%d"))
+
+ggplot(needles.monthly,aes(x=date,y=needles)) + geom_bar(stat='identity') +
+  scale_x_date(date_breaks = "1 month", date_labels =  "%b %Y") + theme_bw() +
+  theme(axis.text.x=element_text(angle=60, hjust=1)) + xlab("") + ylab("Needle Count")
 ```
+
+### A Simple Hotspot Map
+
+To begin to visualize the spatial component of these data we start with a simple map. The map below should be read with some caution. Most locations in our database are places where city workers or citizens reported encountering a single needle. There are however, some needle use 'hotspots' where workers routinely encounter clusters of a hundred or more discarded syringes. 
+
+```{r include=F}
+
+#AIzaSyACbCPvcJqzXSWnVD04QW0u3T84_-uIphw
+
+library(sf)
+library(ggmap)
+ggmap::register_google(key = "AIzaSyACbCPvcJqzXSWnVD04QW0u3T84_-uIphw")
+```
+```{r}
+
+needles.sf <- needles %>% filter(is.na(LAT)==F|is.na(LON)==F) %>%
+               st_as_sf(coords = c("LON", "LAT"), crs = 4326)
+
+sc_basemap <- ggmap(get_googlemap(center = c(lon = -122.0269, lat = 36.9835),
+                    zoom = 13, scale = 2,
+                    maptype ='terrain',
+                    color = 'color'))
+
+# add the year field and aggregate by lat/lon
+map.data <- needles %>% mutate(DATE=as.Date(DATE,format="%m/%d/%y"), year=year(DATE)) %>%
+             group_by(year,LAT,LON) %>% summarise(needles=sum(NEEDLE_QUANTITY,na.rm=T))
+
+sc_basemap +  geom_point(aes(x = LON, y = LAT, colour=factor(year),size=needles), data = subset(map.data,is.na(LAT)==F)) +
+  scale_color_viridis_d(name="Year") +
+  theme_void()
+```
+
+
