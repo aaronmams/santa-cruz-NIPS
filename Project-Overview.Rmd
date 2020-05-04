@@ -198,7 +198,9 @@ To begin to visualize the spatial component of these data we start with a simple
 
 library(sf)
 library(ggmap)
-ggmap::register_google(key = "")
+googlemapsapi <- read.csv('googlemaps_api.csv',header=T)
+apivalue <- googlemapsapi$api
+ggmap::register_google(key = paste(apivalue))
 
 ```
 ```{r}
