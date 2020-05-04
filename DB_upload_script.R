@@ -24,6 +24,7 @@ june2019 <- read.csv('needle_logs/june_2019.csv')
 july2019 <- read.csv('needle_logs/july_2019.csv')
 aug2019 <- read.csv('needle_logs/aug_2019.csv')
 sept2019 <- read.csv('needle_logs/sept_2019.csv')
+oct2019 <- read.csv('needle_logs/oct_2019.csv')
 
 jan2020$LOCATION_RECORDED <- trimws(as.character(jan2020$LOCATION_RECORDED))
 feb2020$LOCATION_RECORDED <- trimws(as.character(feb2020$LOCATION_RECORDED))
@@ -33,6 +34,7 @@ june2019$LOCATION_RECORDED <- trimws(as.character(june2019$LOCATION_RECORDED))
 july2019$LOCATION_RECORDED <- trimws(as.character(july2019$LOCATION_RECORDED))
 aug2019$LOCATION_RECORDED <- trimws(as.character(aug2019$LOCATION_RECORDED))
 sept2019$LOCATION_RECORDED <- trimws(as.character(sept2019$LOCATION_RECORDED))
+oct2019$LOCATION_RECORDED <- trimws(as.character(oct2019$LOCATION_RECORDED))
 #-------------------------------------------------------------
 # First create the LOCATION_ASSIGNED field
 needles$LOCATION_RECORDED <- trimws(needles$LOCATION_RECORDED)
@@ -54,7 +56,8 @@ aug2019 <- tbl_df(aug2019) %>% mutate(LOCATION_ASSIGNED=ifelse(is.na(ZIP),touppe
                                                                  paste(toupper(LOCATION_RECORDED),"_",ZIP,sep="")))
 sept2019 <- tbl_df(sept2019) %>% mutate(LOCATION_ASSIGNED=ifelse(is.na(ZIP),toupper(LOCATION_RECORDED),
                                                                  paste(toupper(LOCATION_RECORDED),"_",ZIP,sep="")))
-
+oct2019 <- tbl_df(oct2019) %>% mutate(LOCATION_ASSIGNED=ifelse(is.na(ZIP),toupper(LOCATION_RECORDED),
+                                                                 paste(toupper(LOCATION_RECORDED),"_",ZIP,sep="")))
 #------------------------------------------------------------
 
 #-------------------------------------------------------------
@@ -75,6 +78,8 @@ june2019 <- june2019 %>% left_join(locs,by=c('LOCATION_ASSIGNED'))
 july2019 <- july2019 %>% left_join(locs,by=c('LOCATION_ASSIGNED'))
 aug2019 <- aug2019 %>% left_join(locs,by=c('LOCATION_ASSIGNED'))
 sept2019 <- sept2019 %>% left_join(locs,by=c('LOCATION_ASSIGNED'))
+oct2019 <- oct2019 %>% left_join(locs,by=c('LOCATION_ASSIGNED'))
+
 #print.data.frame(needles %>% filter(is.na(LAT)) %>% select(LOCATION_RECORDED.x,LOCATION_RECORDED.y,LOCATION_ASSIGNED))
 #print.data.frame(jan2020 %>% filter(is.na(LAT)) %>% select(LOCATION_RECORDED.x,LOCATION_RECORDED.y,LOCATION_ASSIGNED))
 #print.data.frame(feb2020 %>% filter(is.na(LAT)) %>% select(LOCATION_RECORDED.x,LOCATION_RECORDED.y,LOCATION_ASSIGNED))
@@ -82,7 +87,8 @@ sept2019 <- sept2019 %>% left_join(locs,by=c('LOCATION_ASSIGNED'))
 #print.data.frame(may2019 %>% filter(is.na(LAT)) %>% select(LOCATION_RECORDED.x,LOCATION_RECORDED.y,LOCATION_ASSIGNED))
 #print.data.frame(june2019 %>% filter(is.na(LAT)) %>% select(LOCATION_RECORDED.x,LOCATION_RECORDED.y,LOCATION_ASSIGNED))
 #print.data.frame(aug2019 %>% filter(is.na(LAT)) %>% select(LOCATION_RECORDED.x,LOCATION_RECORDED.y,LOCATION_ASSIGNED))
-print.data.frame(sept2019 %>% filter(is.na(LAT)) %>% select(LOCATION_RECORDED.x,LOCATION_RECORDED.y,LOCATION_ASSIGNED))
+#print.data.frame(sept2019 %>% filter(is.na(LAT)) %>% select(LOCATION_RECORDED.x,LOCATION_RECORDED.y,LOCATION_ASSIGNED))
+print.data.frame(oct2019 %>% filter(is.na(LAT)) %>% select(LOCATION_RECORDED.x,LOCATION_RECORDED.y,LOCATION_ASSIGNED))
 #------------------------------------------------------------
 
 #------------------------------------------------------------
@@ -124,6 +130,9 @@ sept2019 <- sept2019 %>%
   select(DATE,LOCATION_RECORDED.x,CITY,STATE,ZIP,DEPT_ID,NEEDLE_QUANTITY,LOCATION_ASSIGNED) 
 names(sept2019) <- c('DATE','LOCATION_RECORDED','CITY','STATE','ZIP','DEPT_ID','NEEDLE_QUANTITY','LOCATION_ASSIGNED')
 
+oct2019 <- oct2019 %>% 
+  select(DATE,LOCATION_RECORDED.x,CITY,STATE,ZIP,DEPT_ID,NEEDLE_QUANTITY,LOCATION_ASSIGNED) 
+names(oct2019) <- c('DATE','LOCATION_RECORDED','CITY','STATE','ZIP','DEPT_ID','NEEDLE_QUANTITY','LOCATION_ASSIGNED')
 
 #write.csv(needle.events,file='needle_logs/needle_events_base.csv')
 #write.csv(jan2020,file='needle_logs/jan_2020.csv',row.names=F)
@@ -132,7 +141,8 @@ names(sept2019) <- c('DATE','LOCATION_RECORDED','CITY','STATE','ZIP','DEPT_ID','
 #write.csv(may2019,file='needle_logs/may_2019.csv',row.names=F)
 #write.csv(june2019,file='needle_logs/june_2019.csv',row.names=F)
 #write.csv(july2019,file='needle_logs/july_2019.csv',row.names=F)
-write.csv(aug2019,file='needle_logs/aug_2019.csv',row.names=F)
-write.csv(sept2019,file='needle_logs/sept_2019.csv',row.names=F)
+#write.csv(aug2019,file='needle_logs/aug_2019.csv',row.names=F)
+#write.csv(sept2019,file='needle_logs/sept_2019.csv',row.names=F)
+write.csv(oct2019,file='needle_logs/sept_2019.csv',row.names=F)
 #-------------------------------------------------------------
 

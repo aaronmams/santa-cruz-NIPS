@@ -2,7 +2,10 @@
 title: "Santa Cruz Needle Waste Database"
 author: "aaron mamula"
 date: "4/15/2020"
-output: html_document
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
 ---
 
 # {.tabset .tabset-fade .tabset-pills}
@@ -197,7 +200,7 @@ To begin to visualize the spatial component of these data we start with a simple
 
 library(sf)
 library(ggmap)
-ggmap::register_google(key = "AIzaSyACbCPvcJqzXSWnVD04QW0u3T84_-uIphw")
+ggmap::register_google(key = "AIzaSyDidf-lLvsB8XO_7DqCzjJl2bRpLvgQh70")
 ```
 ```{r}
 
