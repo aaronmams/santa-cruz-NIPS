@@ -200,7 +200,11 @@ To begin to visualize the spatial component of these data we start with a simple
 
 library(sf)
 library(ggmap)
+<<<<<<< HEAD
 ggmap::register_google(key = "AIzaSyDidf-lLvsB8XO_7DqCzjJl2bRpLvgQh70")
+=======
+ggmap::register_google(key = "")
+>>>>>>> 9fed8792550f78bf1d31733c230841f887b8721c
 ```
 ```{r}
 
